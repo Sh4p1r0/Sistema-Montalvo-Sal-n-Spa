@@ -62,4 +62,4 @@ El núcleo del sistema en Java implementa patrones de diseño reconocidos:
 ---
 
 ## Desarrolladores
-Proyecto final desarrollado para la carrera de Ingeniería de Sistemas e Informática - Universidad Tecnológica del Perú-Piura.
+Proyecto final desarrollado para la carrera de Ingeniería de Sistemas e Informática - Universidad Tecnológica del Perú-Piura
