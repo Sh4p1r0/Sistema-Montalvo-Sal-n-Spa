@@ -1,0 +1,21 @@
+# Binarios y clases compiladas
+*.class
+bin/
+build/
+Proyecto_Diseño_Patrones/bin/
+Proyecto_Diseño_Patrones/build/
+
+# IDEs y Entornos
+.vscode/
+.idea/
+*.iml
+nbproject/private/
+
+# Archivos de sistema y temporales
+sources.txt
+*.log
+.DS_Store
+Thumbs.db
+.agents/
+.gemini/
+
