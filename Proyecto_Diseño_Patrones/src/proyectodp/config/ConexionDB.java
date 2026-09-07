@@ -40,6 +40,9 @@ public class ConexionDB {
         if (!propFile.exists()) {
             propFile = new File("Proyecto_Diseño_Patrones/db.properties");
         }
+        if (!propFile.exists()) {
+            propFile = new File("../db.properties");
+        }
 
         if (propFile.exists()) {
             try (InputStream is = new FileInputStream(propFile)) {
@@ -59,8 +62,8 @@ public class ConexionDB {
         if (this.usuario == null || this.usuario.isEmpty()) {
             this.usuario = "postgres.cgexvsytoxdzronnmjlm";
         }
-        if (this.password == null) {
-            this.password = "";
+        if (this.password == null || this.password.trim().isEmpty() || "[YOUR-PASSWORD]".equals(this.password)) {
+            this.password = "H910j-@PEEEE";
         }
     }
 
@@ -90,25 +93,30 @@ public class ConexionDB {
     }
 
     public synchronized Connection getConexion() throws SQLException {
-        if (conexion == null || conexion.isClosed()) {
-            if (password != null && !password.trim().isEmpty() && !"[YOUR-PASSWORD]".equals(password)) {
-                try {
+        try {
+            if (conexion == null || conexion.isClosed() || !conexion.isValid(2)) {
+                if (password != null && !password.trim().isEmpty() && !"[YOUR-PASSWORD]".equals(password)) {
                     Class.forName("org.postgresql.Driver");
                     this.conexion = DriverManager.getConnection(url, usuario, password);
                     this.conectado = (this.conexion != null && !this.conexion.isClosed());
-                } catch (Exception e) {
-                    this.conectado = false;
-                    throw new SQLException("Error al reconectar a la BD: " + e.getMessage());
                 }
             }
+        } catch (Exception e) {
+            this.conectado = false;
+            throw new SQLException("Error al reconectar a Supabase: " + e.getMessage(), e);
         }
         return conexion;
     }
 
-    public boolean isConectado() {
+    public synchronized boolean isConectado() {
         try {
-            return conectado && conexion != null && !conexion.isClosed();
-        } catch (SQLException e) {
+            if (conexion == null || conexion.isClosed() || !conexion.isValid(2)) {
+                if (password != null && !password.trim().isEmpty() && !"[YOUR-PASSWORD]".equals(password)) {
+                    getConexion();
+                }
+            }
+            return conexion != null && !conexion.isClosed();
+        } catch (Exception e) {
             return false;
         }
     }

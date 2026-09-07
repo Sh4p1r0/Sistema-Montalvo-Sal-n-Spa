@@ -28,20 +28,22 @@ public class UsuarioDAO {
         ConexionDB pool = ConexionDB.getInstancia();
         if (pool.isConectado()) {
             String sql = "SELECT id, username, password, rol, nombre, area_servicio FROM usuarios WHERE username = ? AND password = ?";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, username.trim());
-                ps.setString(2, password.trim());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        return new Usuario(
-                            rs.getInt("id"),
-                            rs.getString("username"),
-                            rs.getString("password"),
-                            rs.getString("rol"),
-                            rs.getString("nombre"),
-                            rs.getString("area_servicio")
-                        );
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, username.trim());
+                    ps.setString(2, password.trim());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            return new Usuario(
+                                rs.getInt("id"),
+                                rs.getString("username"),
+                                rs.getString("password"),
+                                rs.getString("rol"),
+                                rs.getString("nombre"),
+                                rs.getString("area_servicio")
+                            );
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -63,20 +65,20 @@ public class UsuarioDAO {
         ConexionDB pool = ConexionDB.getInstancia();
         if (pool.isConectado()) {
             String sql = "SELECT id, username, password, rol, nombre, area_servicio FROM usuarios WHERE rol = 'ESTILISTA' ORDER BY nombre";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    estilistas.add(new Usuario(
-                        rs.getInt("id"),
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("rol"),
-                        rs.getString("nombre"),
-                        rs.getString("area_servicio")
-                    ));
-                }
-                if (!estilistas.isEmpty()) {
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql);
+                     ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        estilistas.add(new Usuario(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("rol"),
+                            rs.getString("nombre"),
+                            rs.getString("area_servicio")
+                        ));
+                    }
                     return estilistas;
                 }
             } catch (Exception e) {

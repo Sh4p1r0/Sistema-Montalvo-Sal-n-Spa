@@ -37,6 +37,18 @@ public class InicializadorDB {
         }
 
         try {
+            // Verificar si la tabla de citas ya existe para no re-ejecutar el script semilla en cada inicio
+            try (Connection conn = pool.getConexion();
+                 Statement stmt = conn.createStatement();
+                 java.sql.ResultSet rs = stmt.executeQuery("SELECT to_regclass('public.citas')")) {
+                if (rs.next() && rs.getString(1) != null) {
+                    System.out.println("[InicializadorDB] Tablas en Supabase ya verificadas y listas.");
+                    return true;
+                }
+            } catch (Exception e) {
+                // Si la tabla no existe, continuar con la creación normal
+            }
+
             String sqlCompleto = Files.readString(schemaFile.toPath(), StandardCharsets.UTF_8);
             try (Connection conn = pool.getConexion();
                  Statement stmt = conn.createStatement()) {

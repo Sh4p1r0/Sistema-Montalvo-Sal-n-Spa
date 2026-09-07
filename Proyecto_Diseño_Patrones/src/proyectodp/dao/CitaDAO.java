@@ -42,17 +42,19 @@ public class CitaDAO {
         if (pool.isConectado()) {
             String sql = "INSERT INTO citas (id, cliente, fecha, hora, estilista, servicio, precio, estado) VALUES (?, ?, ?::date, ?, ?, ?, ?, ?) "
                        + "ON CONFLICT (id) DO UPDATE SET cliente = EXCLUDED.cliente, fecha = EXCLUDED.fecha, hora = EXCLUDED.hora, estado = EXCLUDED.estado";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, cita.getId());
-                ps.setString(2, cita.getNombreCliente());
-                ps.setString(3, cita.getFecha());
-                ps.setString(4, cita.getHora());
-                ps.setString(5, cita.getEstilista());
-                ps.setString(6, cita.getTipoServicio());
-                ps.setDouble(7, cita.getPrecio());
-                ps.setString(8, cita.getEstado().obtenerNombreEstado());
-                ps.executeUpdate();
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, cita.getId());
+                    ps.setString(2, cita.getNombreCliente());
+                    ps.setString(3, cita.getFecha());
+                    ps.setString(4, cita.getHora());
+                    ps.setString(5, cita.getEstilista());
+                    ps.setString(6, cita.getTipoServicio());
+                    ps.setDouble(7, cita.getPrecio());
+                    ps.setString(8, cita.getEstado().obtenerNombreEstado());
+                    ps.executeUpdate();
+                }
             } catch (Exception e) {
                 System.err.println("[CitaDAO] Error al insertar en Supabase: " + e.getMessage());
             }
@@ -69,11 +71,13 @@ public class CitaDAO {
         ConexionDB pool = ConexionDB.getInstancia();
         if (pool.isConectado()) {
             String sql = "UPDATE citas SET estado = ? WHERE id = ?";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, nuevoEstado);
-                ps.setString(2, id);
-                ps.executeUpdate();
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nuevoEstado);
+                    ps.setString(2, id);
+                    ps.executeUpdate();
+                }
             } catch (Exception e) {
                 System.err.println("[CitaDAO] Error al actualizar estado en Supabase: " + e.getMessage());
             }
@@ -91,12 +95,14 @@ public class CitaDAO {
         ConexionDB pool = ConexionDB.getInstancia();
         if (pool.isConectado()) {
             String sql = "UPDATE citas SET fecha = ?::date, hora = ?, estado = 'Reprogramada' WHERE id = ?";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, nuevaFecha);
-                ps.setString(2, nuevaHora);
-                ps.setString(3, id);
-                ps.executeUpdate();
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nuevaFecha);
+                    ps.setString(2, nuevaHora);
+                    ps.setString(3, id);
+                    ps.executeUpdate();
+                }
             } catch (Exception e) {
                 System.err.println("[CitaDAO] Error al reprogramar en Supabase: " + e.getMessage());
             }
@@ -108,24 +114,24 @@ public class CitaDAO {
         if (pool.isConectado()) {
             List<CitasMontalvo> listaBD = new ArrayList<>();
             String sql = "SELECT id, cliente, to_char(fecha, 'YYYY-MM-DD') as fecha_str, hora, estilista, servicio, precio, estado FROM citas ORDER BY fecha, hora";
-            try (Connection conn = pool.getConexion();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    CitasMontalvo c = new CitasMontalvo(
-                        rs.getString("id"),
-                        rs.getString("cliente"),
-                        rs.getString("fecha_str"),
-                        rs.getString("hora"),
-                        rs.getString("servicio"),
-                        rs.getDouble("precio"),
-                        rs.getString("estilista"),
-                        45,
-                        parseEstado(rs.getString("estado"))
-                    );
-                    listaBD.add(c);
-                }
-                if (!listaBD.isEmpty()) {
+            try {
+                Connection conn = pool.getConexion();
+                try (PreparedStatement ps = conn.prepareStatement(sql);
+                     ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        CitasMontalvo c = new CitasMontalvo(
+                            rs.getString("id"),
+                            rs.getString("cliente"),
+                            rs.getString("fecha_str"),
+                            rs.getString("hora"),
+                            rs.getString("servicio"),
+                            rs.getDouble("precio"),
+                            rs.getString("estilista"),
+                            45,
+                            parseEstado(rs.getString("estado"))
+                        );
+                        listaBD.add(c);
+                    }
                     return listaBD;
                 }
             } catch (Exception e) {
