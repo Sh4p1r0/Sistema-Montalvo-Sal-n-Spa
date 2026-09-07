@@ -1,66 +1,65 @@
-# Montalvo Salón & Spa — Sistema de Gestión de Citas & Caja Web
+# Montalvo Salón & Spa - Sistema de Gestión de Citas y Caja Web
 
-> Sistema comercial de gestión de citas, recepción, arqueo de caja y agenda en tiempo real para salón de belleza y spa, implementado con **Arquitectura de Patrones de Diseño (GoF)** en Java, persistencia resiliente en **PostgreSQL (Supabase)** y un frontend moderno con **Sistema de Diseño Revolut** (alto contraste Stark Black y Canvas Light, botones pill 9999px, tipografía Inter y Bento Grid interactivo).
-
----
-
-## Características Principales
-
-- **Sistema de Diseño Revolut:** Interfaz de alto impacto basada en lienzos limpios (Canvas Light), cabecera Stark Black (#000000), botones píldora redondeados a 9999px y escala tipográfica Inter.
-- **Agenda Activa en Tiempo Real:** Visualización compacta de disponibilidad horaria estilo teclado inteligente (horarios libres en verde esmeralda y ocupados con detalle de estilista).
-- **Tarjetas Bento de Citas:** Citas organizadas con bordes hairline de 1px (#e2e2e7), tipografía Inter jerarquizada y micro-elevación al interactuar.
-- **Píldoras de Estado Armónicas:** Indicadores de estado en tiempo real (Pendiente en naranja, En Atención en verde esmeralda, Reprogramada en azul zafiro y Cancelada en rojo).
-- **Control y Arqueo de Caja Diario/Semanal:** Módulo de balance y auditoría en tiempo real con desglose de facturación por especialista, cálculo de ticket promedio y filtros temporales rápidos (Ayer, Hoy, Esta Semana, Mañana, Todas).
-- **Transiciones y Micro-Interacciones:** Animación fluida de desvanecimiento (400ms) al finalizar citas antes de su archivado automático en caja.
-- **Doble Persistencia Resiliente:** Conexión nativa a base de datos en la nube (Supabase PostgreSQL) con sincronización automática y fallback en memoria.
+Sistema integral de gestión de citas, recepción, arqueo de caja y agenda en tiempo real para salón de belleza y spa. Desarrollado con una arquitectura orientada a Patrones de Diseño (GoF) en Java, persistencia conectada a PostgreSQL (Supabase) y una interfaz web construida bajo los principios del Sistema de Diseño Revolut.
 
 ---
 
-## Arquitectura de Patrones de Diseño (GoF)
+## Arquitectura y Patrones de Diseño (GoF)
 
-El núcleo del sistema en Java implementa patrones de diseño reconocidos:
+El núcleo del sistema en Java implementa patrones de diseño que aseguran modularidad, escalabilidad y bajo acoplamiento:
 
-| Patrón GoF | Tipo | Aplicación en el Proyecto |
+| Patrón GoF | Clasificación | Componente y Aplicación |
 | :--- | :--- | :--- |
-| **Facade** | Estructural | `SistemaFacade`: Unifica la lógica de negocio, reportes y caja para el frontend web. |
-| **State** | Comportamiento | `EstadoPendiente`, `EstadoAtendida`, `EstadoReprogramada`, `EstadoFinalizada`, `EstadoCancelada`. |
-| **Builder** | Creacional | `CitaBuilder`: Construcción paso a paso y validada de citas. |
-| **Factory Method** | Creacional | `ServicioFactory`: Creación de servicios específicos del salón. |
-| **Singleton** | Creacional | `ConexionDB` y `GestionMemoria`: Acceso único al pool de conexiones y caché de datos. |
-| **Proxy** | Estructural | Control de acceso y seguridad para roles de usuario y recepcionista. |
-| **DAO** | Arquitectura | `CitaDAO`, `UsuarioDAO`: Abstracción completa de persistencia en PostgreSQL. |
+| **Facade** | Estructural | `SistemaFacade`: Centraliza y simplifica las operaciones de citas, servicios, especialistas y caja para los controladores web. |
+| **State** | Comportamiento | `EstadoCita` (`EstadoPendiente`, `EstadoAtendida`, `EstadoReprogramada`, `EstadoFinalizada`, `EstadoCancelada`): Modela el ciclo de vida de cada cita y sus reglas de transición. |
+| **Builder** | Creacional | `CitaBuilder`: Construcción paso a paso de citas garantizando validaciones de negocio, identificadores únicos y consistencia de datos. |
+| **Factory Method** | Creacional | `ServicioFactory`: Instanciación dinámica del catálogo de servicios según su categoría y área técnica. |
+| **Singleton** | Creacional | `ConexionDB` y `GestionMemoria`: Control centralizado y único del pool de conexión a la base de datos y la memoria operativa. |
+| **Proxy** | Estructural | `SistemaProxy`: Control de acceso, seguridad y auditoría de peticiones para usuarios y recepcionistas. |
+| **DAO** | Arquitectura | `CitaDAO` y `UsuarioDAO`: Capa de persistencia desacoplada para consultas y operaciones en PostgreSQL. |
 
 ---
 
-## Tecnologías
+## Módulos del Sistema
 
-- **Backend:** Java 17+ (Servidor HTTP nativo de alto rendimiento, sin frameworks pesados).
-- **Base de Datos:** PostgreSQL en la nube (Supabase) con driver JDBC.
-- **Frontend:** HTML5 Semántico, CSS3 Vanilla Moderno (Variables :root, Flexbox, CSS Grid), JavaScript Moderno (ES6+).
-- **Diseño UI/UX:** Inspirado en el Sistema de Diseño Revolut, Stark Black (#000000), Canvas Light (#ffffff), Ink (#191c1f), verde esmeralda (#00a87e) y Bento Grid interactivo.
+- **Agenda Activa y Disponibilidad:** Panel visual de horarios libres y ocupados para evitar cruces entre estilistas.
+- **Gestión Integral de Citas:** Registro de clientes, asignación de especialistas, reprogramación de fecha/hora y cancelación.
+- **Cuadre de Caja y Facturación:** Arqueo de ingresos en tiempo real, desglose por estilista, ticket promedio y filtros temporales (Ayer, Hoy, Esta Semana, Mañana, Histórico).
+- **Persistencia en la Nube:** Almacenamiento continuo en Supabase PostgreSQL con modo híbrido de contingencia.
+- **Interfaz Revolut:** Estética limpia con contraste Stark Black (#000000) y Canvas Light (#ffffff), tipografía Inter, bordes de 1px y componentes Bento Grid.
 
 ---
 
-## Instrucciones de Ejecución
+## Stack Tecnológico
 
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/Sh4p1r0/Sistema-Montalvo-Sal-n-Spa.git
-   cd Sistema-Montalvo-Sal-n-Spa
-   ```
+- **Backend:** Java (HTTP Server nativo, JDBC PostgreSQL).
+- **Base de Datos:** PostgreSQL en la nube (Supabase).
+- **Frontend:** HTML5 semántico, CSS3 Vanilla y JavaScript moderno (ES6+).
+- **Entorno:** Compatible con Visual Studio Code, NetBeans, IntelliJ IDEA y Eclipse.
 
-2. Ejecutar la aplicación Java:
-   - Desde tu IDE favorito (VS Code, IntelliJ, Eclipse, NetBeans) abriendo el proyecto y ejecutando con un clic la clase principal:
-     `proyectodp.main.MainWeb` (o `proyectodp.main.Main`).
-   - O por línea de comandos:
-     ```bash
-     java -cp "build;lib/*;Proyecto_Diseño_Patrones/lib/*" proyectodp.main.MainWeb
-     ```
+---
 
-3. Abrir en el navegador:
-   ```text
-   http://localhost:8080
-   ```
+## Ejecución del Proyecto
+
+### 1. Requisitos Previos
+- Java JDK 17 o superior instalado.
+- Visual Studio Code o cualquier IDE Java compatible.
+
+### 2. Ejecutar desde el IDE
+1. Abrir la carpeta del proyecto en Visual Studio Code.
+2. Abrir el archivo `MainWeb.java` ubicado en `src/proyectodp/main/MainWeb.java`.
+3. Presionar el botón de ejecución **Run** (o presionar `F5`). Las librerías de PostgreSQL ya están configuradas en el entorno.
+
+### 3. Ejecutar por Terminal
+```bash
+java -cp "build/classes;lib/postgresql-42.7.3.jar" proyectodp.main.MainWeb
+```
+
+### 4. Acceso Web
+Abrir en el navegador:
+```text
+http://localhost:8080
+```
 
 ---
 
