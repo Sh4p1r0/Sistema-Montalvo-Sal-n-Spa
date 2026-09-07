@@ -1,17 +1,18 @@
 /**
  * MONTALVO SALÓN & SPA — REVOLUT DESIGN SYSTEM
- * Sistema de Diseño extraído de la referencia oficial de Revolut (https://www.revolut.com/)
- * Lienzos Stark Black (#000000) & Canvas Light (#ffffff), Acento Cobalt-Violet (#494fdf)
- * Tipografía Inter (Aeonik Pro), Botones Pill (9999px), Radios 12px/20px/28px, Hairlines de 1px
+ * Estética Fintech de Alta Gama: Stark Black (#000000), Canvas Light (#ffffff), Ink (#191c1f)
+ * Acentos Saturados: Emerald/Teal (#00a87e), Sapphire (#007bc2), Warning (#ec7e00), Danger (#e23b4a)
+ * Cero colores morados. Tipografía Inter, Botones Pill (9999px), Radios 12px/20px/28px, Hairlines de 1px
  */
 
 :root {
   /* ==========================================================
-     1. TOKENS — COLORES OFICIALES REVOLUT
+     1. TOKENS — COLORES DE ALTA GAMA (SIN MORADOS)
      ========================================================== */
-  --color-primary: #494fdf;
-  --color-primary-bright: #4f55f1;
-  --color-primary-deep: #3a40c4;
+  /* Rol Primario: Tinta Negra Elegante de Revolut */
+  --color-primary: #191c1f;
+  --color-primary-bright: #000000;
+  --color-primary-deep: #000000;
   --color-on-primary: #ffffff;
 
   /* Neutros de Tinta y Texto */
@@ -39,7 +40,7 @@
   --color-hairline-strong: #191c1f;
   --color-divider-soft: rgba(255, 255, 255, 0.06);
 
-  /* Acentos de Producto Saturados */
+  /* Acentos de Producto Saturados (Armónicos) */
   --color-accent-teal: #00a87e;
   --color-accent-blue-link: #376cd5;
   --color-accent-light-blue: #007bc2;
@@ -51,7 +52,7 @@
   --color-accent-danger: #e23b4a;
   --color-accent-deep-red: #8b0000;
   --color-accent-brown: #936d62;
-  --color-link: #376cd5;
+  --color-link: #007bc2;
 
   /* ==========================================================
      2. TOKENS — TIPOGRAFÍA (INTER · SUSTITUTO OFICIAL AEONIK PRO)
@@ -141,7 +142,7 @@ body {
 
 .text-amber { color: var(--color-accent-warning) !important; }
 .text-emerald { color: var(--color-accent-teal) !important; }
-.text-primary-val { color: var(--color-primary) !important; }
+.text-primary-val { color: var(--color-accent-teal) !important; }
 .text-teal { color: var(--color-accent-teal) !important; }
 
 /* ==========================================================
@@ -181,11 +182,11 @@ body {
 .brand-logo {
   width: 40px;
   height: 40px;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: #ffffff;
+  color: #000000;
   font-family: var(--font-primary);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,16 +253,17 @@ body {
   line-height: 1.2;
 }
 
+/* Caja Header con Acento Teal Armónico */
 .stat-caja-header {
   cursor: pointer;
-  background-color: rgba(73, 79, 223, 0.12);
-  border-color: rgba(73, 79, 223, 0.35);
+  background-color: rgba(0, 168, 126, 0.08);
+  border-color: rgba(0, 168, 126, 0.25);
   min-width: 110px;
 }
 
 .stat-caja-header:hover {
-  background-color: rgba(73, 79, 223, 0.22);
-  border-color: var(--color-primary-bright);
+  background-color: rgba(0, 168, 126, 0.18);
+  border-color: var(--color-accent-teal);
   transform: translateY(-1px);
 }
 
@@ -306,8 +308,8 @@ body {
 .user-avatar {
   width: 28px;
   height: 28px;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: #ffffff;
+  color: #000000;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -373,7 +375,7 @@ body {
   white-space: nowrap;
 }
 
-/* Botón Primario: Cobalt-Violet con texto blanco */
+/* Botón Primario en Superficies Claras: Stark Ink / Black */
 .btn-primary, .btn-gold {
   background-color: var(--color-primary);
   color: var(--color-on-primary);
@@ -382,14 +384,28 @@ body {
 }
 
 .btn-primary:hover, .btn-gold:hover {
-  background-color: var(--color-primary-bright);
+  background-color: #000000;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(73, 79, 223, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:active, .btn-gold:active {
-  background-color: var(--color-primary-deep);
+  background-color: #0a0a0a;
   transform: translateY(0);
+}
+
+/* Botón Primario en el Header Oscuro: White Pill (Especificación Revolut) */
+.header .btn-primary, .header .btn-gold {
+  background-color: #ffffff;
+  color: #191c1f;
+  height: 44px;
+  padding: 10px 22px;
+}
+
+.header .btn-primary:hover, .header .btn-gold:hover {
+  background-color: #f0f0f4;
+  color: #000000;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
 }
 
 /* Botón Oscuro: Stark Black */
@@ -498,8 +514,8 @@ body {
 
 .badge-feature, .badge-gold {
   display: inline-block;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: var(--color-accent-teal);
+  color: #ffffff;
   font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -624,7 +640,7 @@ body {
 
 .breakdown-bar-fill {
   height: 100%;
-  background-color: var(--color-primary);
+  background-color: var(--color-accent-teal);
   border-radius: var(--radius-full);
   transition: width 0.6s var(--ease-revolut);
 }
@@ -719,8 +735,8 @@ body {
 }
 
 .date-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(73, 79, 223, 0.12);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(25, 28, 31, 0.08);
 }
 
 /* Botón de Cuadre de Caja */
@@ -742,11 +758,11 @@ body {
 }
 
 .btn-caja-action:hover {
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
-  border-color: var(--color-primary);
+  background-color: #191c1f;
+  color: #ffffff;
+  border-color: #191c1f;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(73, 79, 223, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Leyenda de Disponibilidad */
@@ -888,8 +904,8 @@ body {
 }
 
 .search-box input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(73, 79, 223, 0.12);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(25, 28, 31, 0.08);
 }
 
 .filter-group {
@@ -917,11 +933,16 @@ body {
   outline: none;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .select-styled:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(73, 79, 223, 0.12);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(25, 28, 31, 0.08);
 }
 
 /* ==========================================================
@@ -1005,7 +1026,7 @@ body {
   border-radius: var(--radius-full);
 }
 
-/* Píldoras de Estado (Badges de Estado Revolut) */
+/* Píldoras de Estado (Badges Armónicos Sin Morados) */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -1042,14 +1063,14 @@ body {
   background-color: var(--color-accent-teal);
 }
 
-/* Estado: Reprogramada (Cobalt-Violet) */
+/* Estado: Reprogramada (Sapphire / Cerulean Blue) */
 .status-pill.reprogrammed {
-  background-color: rgba(73, 79, 223, 0.1);
-  color: var(--color-primary);
-  border: 1px solid rgba(73, 79, 223, 0.25);
+  background-color: rgba(0, 123, 194, 0.1);
+  color: var(--color-accent-light-blue);
+  border: 1px solid rgba(0, 123, 194, 0.25);
 }
 .status-pill.reprogrammed .status-dot {
-  background-color: var(--color-primary);
+  background-color: var(--color-accent-light-blue);
 }
 
 /* Estado: Cancelada (Accent Danger) */
@@ -1130,10 +1151,10 @@ body {
   gap: 6px;
 }
 
-/* Botón Finalizar Cita (Luxe / Revolut Primary Pill) */
+/* Botón Finalizar Cita (Teal / Cash Collection Pill) */
 .btn-finalize-luxe {
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: var(--color-accent-teal);
+  color: #ffffff;
   font-family: var(--font-primary);
   font-size: var(--text-button-sm);
   font-weight: 600;
@@ -1149,9 +1170,9 @@ body {
 }
 
 .btn-finalize-luxe:hover {
-  background-color: var(--color-primary-bright);
+  background-color: #00966e;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(73, 79, 223, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 168, 126, 0.3);
 }
 
 /* Botones Minimalistas de Acción (Pill Soft) */
@@ -1224,7 +1245,7 @@ body {
 }
 
 /* ==========================================================
-   12. MODALES & DIÁLOGOS (REVOLUT POPUPS)
+   12. MODALES & DIÁLOGOS (REVOLUT POPUPS SIN OVERFLOW)
    ========================================================== */
 .modal-overlay {
   position: fixed;
@@ -1241,6 +1262,7 @@ body {
   justify-content: center;
   padding: var(--spacing-lg);
   animation: fadeInModal 0.2s var(--ease-revolut);
+  overflow-y: auto;
 }
 
 @keyframes fadeInModal {
@@ -1248,16 +1270,19 @@ body {
   to { opacity: 1; }
 }
 
+/* Caja Modal: Ampliada a 600px y sin desborde horizontal */
 .modal.card, .modal-content {
   background-color: var(--color-surface-card);
   border: 1px solid var(--color-hairline-light);
   border-radius: var(--radius-xl);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
   width: 100%;
-  max-width: 540px;
+  max-width: 600px;
   max-height: 90vh;
+  overflow-x: hidden !important;
   overflow-y: auto;
   padding: var(--spacing-xxl);
+  box-sizing: border-box;
   animation: scaleUpModal 0.25s var(--ease-revolut);
 }
 
@@ -1293,6 +1318,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-close-modal:hover {
@@ -1304,23 +1330,37 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .form-group label {
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Text Input Revolut (56px, Radius 12px, Hairline) */
 .input-field {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 56px;
   background-color: var(--color-canvas-light);
   color: var(--color-ink);
@@ -1330,18 +1370,23 @@ body {
   border-radius: var(--radius-md);
   padding: 14px 16px;
   outline: none;
+  box-sizing: border-box;
   transition: all 0.2s;
 }
 
 .input-field:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(73, 79, 223, 0.15);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(25, 28, 31, 0.08);
 }
 
+/* Fila de Formulario con minmax(0, 1fr) para evitar que selects largos empujen el grid */
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .service-preview-box {
@@ -1350,9 +1395,14 @@ body {
   padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-ink);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .modal-footer {
@@ -1371,9 +1421,9 @@ body {
 }
 
 .alert-info {
-  background-color: rgba(73, 79, 223, 0.08);
-  border: 1px solid rgba(73, 79, 223, 0.2);
-  color: var(--color-primary-deep);
+  background-color: rgba(0, 123, 194, 0.08);
+  border: 1px solid rgba(0, 123, 194, 0.2);
+  color: #005a91;
 }
 
 .alert-error {
@@ -1390,10 +1440,10 @@ body {
 .modal-brand-logo {
   width: 56px;
   height: 56px;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: #191c1f;
+  color: #ffffff;
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1478,8 +1528,8 @@ body {
 .modal-brand-icon {
   width: 44px;
   height: 44px;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: #191c1f;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1562,7 +1612,7 @@ body {
 .caja-stylist-amount {
   font-size: var(--text-body-sm);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-accent-teal);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1657,7 +1707,7 @@ body {
 }
 
 .toast-info {
-  border-left: 4px solid var(--color-primary);
+  border-left: 4px solid var(--color-accent-light-blue);
 }
 
 /* ==========================================================
@@ -1704,5 +1754,15 @@ body {
   }
   .caja-table-wrapper {
     overflow-x: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .modal.card, .modal-content {
+    padding: var(--spacing-lg);
+    max-width: 95vw;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }

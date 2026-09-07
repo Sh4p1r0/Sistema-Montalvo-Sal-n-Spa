@@ -223,7 +223,7 @@ async function cargarServicios() {
     
     selectServicio.innerHTML = servicios.map(s => `
       <option value="${s.codigo}" data-precio="${s.precio}" data-duracion="${s.duracion}">
-        ${s.nombre} - S/. ${s.precio.toFixed(2)} (${s.duracion} min)
+        ${s.nombre} (S/. ${s.precio.toFixed(2)})
       </option>
     `).join('');
 
@@ -238,7 +238,7 @@ async function cargarServicios() {
     ];
     selectServicio.innerHTML = servicios.map(s => `
       <option value="${s.codigo}" data-precio="${s.precio}" data-duracion="${s.duracion}">
-        ${s.nombre} - S/. ${s.precio.toFixed(2)} (${s.duracion} min)
+        ${s.nombre} (S/. ${s.precio.toFixed(2)})
       </option>
     `).join('');
     actualizarPreviewServicio();
