@@ -356,7 +356,7 @@ function renderizarCitas() {
       <div class="bento-appointment-card card" id="card-${c.id}" data-id="${c.id}">
         <div class="card-top-row">
           <div class="time-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             <span>${c.hora}</span>
           </div>
           <div class="status-pill ${estadoClass}">
@@ -795,9 +795,9 @@ async function abrirModalCaja() {
           <td>${escapeHtml(c.nombreCliente)}</td>
           <td>${escapeHtml(c.tipoServicio)}</td>
           <td>${escapeHtml(c.estilista)}</td>
-          <td style="color:var(--gold-primary);font-weight:700;">S/. ${c.precio.toFixed(2)}</td>
+          <td class="tabular-price">S/. ${c.precio.toFixed(2)}</td>
           <td>
-            <span class="status-pill ${c.estado === 'Finalizada' ? 'canceled' : 'active'}" style="font-size:0.65rem;padding:0.15rem 0.5rem;">
+            <span class="status-pill ${c.estado === 'Finalizada' ? 'canceled' : 'active'}" style="font-size:0.75rem;padding:0.2rem 0.6rem;">
               ${c.estado}
             </span>
           </td>

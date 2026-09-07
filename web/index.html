@@ -5,15 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Montalvo Salón & Spa | Gestión de Citas y Agenda</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Fondo decorativo con gradientes sutiles -->
-  <div class="bg-glow glow-1"></div>
-  <div class="bg-glow glow-2"></div>
 
-  <!-- Header / Barra de Navegación -->
+  <!-- Header / Barra de Navegación Estilo Revolut -->
   <header class="header">
     <div class="header-container">
       <div class="brand">
@@ -42,7 +40,7 @@
             <span class="stat-label" id="statCajaLabel">Caja Hoy</span>
             <span class="caja-live-pulse" title="Actualizado en tiempo real"></span>
           </div>
-          <span class="stat-value text-gold" id="statCajaValor">S/. 0.00</span>
+          <span class="stat-value text-primary-val" id="statCajaValor">S/. 0.00</span>
         </div>
       </div>
 
@@ -59,12 +57,12 @@
           </button>
         </div>
 
-        <button class="btn btn-gold" id="btnNuevaCita">
+        <button class="btn btn-primary" id="btnNuevaCita">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           Nueva Cita
         </button>
 
-        <button class="btn btn-admin-stats" id="btnToggleStats" title="Ver Panel de Estadísticas">
+        <button class="btn btn-outline-dark" id="btnToggleStats" title="Ver Panel de Estadísticas">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
           Estadísticas
         </button>
@@ -79,7 +77,7 @@
     <section class="admin-stats-panel card hidden" id="panelAdminStats">
       <div class="stats-panel-header">
         <div>
-          <span class="badge-gold">RESUMEN DEL SALÓN</span>
+          <span class="badge-feature">RESUMEN DEL SALÓN</span>
           <h2>Panel de Métricas & Rendimiento en Tiempo Real</h2>
         </div>
         <button class="btn-close-panel" id="btnCerrarStats">&times;</button>
@@ -124,7 +122,7 @@
     <section class="calendar-bar card">
       <div class="calendar-header">
         <div class="calendar-title-group">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           <div>
             <h2>Agenda Activa de Citas</h2>
             <p class="subtitle" id="calendarSubtitle">Selecciona fecha y especialista. Las citas finalizadas se archivan automáticamente.</p>
@@ -242,7 +240,7 @@
         <div id="loginError" class="alert-box alert-error hidden"></div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-gold w-100">Entrar al Sistema</button>
+          <button type="submit" class="btn btn-primary w-100">Entrar al Sistema</button>
         </div>
       </form>
     </div>
@@ -306,8 +304,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline" id="btnCancelarModalNueva">Cancelar</button>
-          <button type="submit" class="btn btn-gold">Confirmar y Agendar</button>
+          <button type="button" class="btn btn-soft" id="btnCancelarModalNueva">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar y Agendar</button>
         </div>
       </form>
     </div>
@@ -358,8 +356,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline" id="btnCancelarModalReprogramar">Descartar</button>
-          <button type="submit" class="btn btn-gold">Guardar Nueva Fecha/Hora</button>
+          <button type="button" class="btn btn-soft" id="btnCancelarModalReprogramar">Descartar</button>
+          <button type="submit" class="btn btn-primary">Guardar Nueva Fecha/Hora</button>
         </div>
       </form>
     </div>
@@ -370,8 +368,8 @@
     <div class="modal-content bento-modal-caja">
       <div class="modal-header">
         <div class="caja-modal-title">
-          <div class="modal-gold-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
+          <div class="modal-brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>
           </div>
           <div>
             <h3>Cuadre de Caja & Arqueo de Ingresos</h3>
@@ -385,7 +383,7 @@
       <div class="caja-kpi-grid">
         <div class="caja-kpi-card">
           <span class="caja-kpi-subtitle">Total Recaudado</span>
-          <span class="caja-kpi-number text-gold" id="cajaModalTotal">S/. 0.00</span>
+          <span class="caja-kpi-number text-primary-val" id="cajaModalTotal">S/. 0.00</span>
         </div>
         <div class="caja-kpi-card">
           <span class="caja-kpi-subtitle">Servicios Cobrados</span>
@@ -393,7 +391,7 @@
         </div>
         <div class="caja-kpi-card">
           <span class="caja-kpi-subtitle">Ticket Promedio</span>
-          <span class="caja-kpi-number text-cyan" id="cajaModalTicketPromedio">S/. 0.00</span>
+          <span class="caja-kpi-number text-teal" id="cajaModalTicketPromedio">S/. 0.00</span>
         </div>
       </div>
 
@@ -429,11 +427,11 @@
       </div>
 
       <div class="modal-footer caja-modal-footer">
-        <button type="button" class="btn btn-outline" id="btnExportarCaja">
+        <button type="button" class="btn btn-soft" id="btnExportarCaja">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           Imprimir / Exportar Reporte
         </button>
-        <button type="button" class="btn btn-gold" id="btnCerrarCajaFooter">Cerrar</button>
+        <button type="button" class="btn btn-dark" id="btnCerrarCajaFooter">Cerrar</button>
       </div>
     </div>
   </div>
