@@ -282,6 +282,10 @@ async function cerrarSesion() {
   mostrarToast('Sesión cerrada.', 'info');
 }
 
+function puedeEditarCitas() {
+  return !!currentUser && (currentUser.rol || '').toUpperCase() !== 'ESTILISTA';
+}
+
 function aplicarPerfilUsuario() {
   if (!currentUser) return;
 
@@ -473,6 +477,7 @@ function renderizarCitas() {
             <span class="price-value">S/. ${c.precio.toFixed(2)}</span>
           </div>
 
+          ${puedeEditarCitas() ? `
           <div class="card-actions-group">
             ${botonFinalizar}
 
@@ -488,6 +493,7 @@ function renderizarCitas() {
               </button>
             ` : ''}
           </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -500,6 +506,10 @@ function renderizarCitas() {
 
 // Finalizar cita con animación fluida de 400ms (opacity 0, translateY 10px)
 async function finalizarCita(id) {
+  if (!puedeEditarCitas()) {
+    mostrarToast('Tu rol es de solo lectura en la agenda.', 'error');
+    return;
+  }
   const card = document.getElementById(`card-${id}`);
   if (card) {
     card.classList.add('card-dismissing');
@@ -538,6 +548,10 @@ async function finalizarCita(id) {
 }
 
 async function cambiarEstadoCita(id, accion) {
+  if (!puedeEditarCitas()) {
+    mostrarToast('Tu rol es de solo lectura en la agenda.', 'error');
+    return;
+  }
   try {
     const res = await apiFetch(`${API_BASE}/api/citas/estado`, {
       method: 'POST',
@@ -599,6 +613,10 @@ formNuevaCita.addEventListener('submit', async (e) => {
 });
 
 function abrirModalReprogramar(id) {
+  if (!puedeEditarCitas()) {
+    mostrarToast('Tu rol es de solo lectura en la agenda.', 'error');
+    return;
+  }
   const cita = citas.find(c => c.id === id);
   if (!cita) return;
 
