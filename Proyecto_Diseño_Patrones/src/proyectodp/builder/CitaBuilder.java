@@ -63,18 +63,18 @@ public class CitaBuilder {
     }
 
     public CitasMontalvo build() {
-        if (this.id == null || this.id.isEmpty()) {
-            this.id = UUID.randomUUID().toString().substring(0, 8);
-        }
-        if (this.estado == null) {
-            this.estado = new EstadoPendiente();
-        }
-        if (this.fecha == null || this.fecha.isEmpty()) {
-            this.fecha = java.time.LocalDate.now().toString();
-        }
-        if (this.estilista == null || this.estilista.isEmpty()) {
-            this.estilista = "Especialista Montalvo";
-        }
-        return new CitasMontalvo(id, cliente, fecha, hora, servicio, precio, estilista, duracionMinutos, estado);
+        // Se usan locales para no mutar el builder: así puede reutilizarse
+        // y cada build() genera su propio ID.
+        String idFinal = (this.id != null && !this.id.isEmpty())
+                ? this.id
+                : UUID.randomUUID().toString().substring(0, 8);
+        EstadoCita estadoFinal = (this.estado != null) ? this.estado : new EstadoPendiente();
+        String fechaFinal = (this.fecha != null && !this.fecha.isEmpty())
+                ? this.fecha
+                : java.time.LocalDate.now().toString();
+        String estilistaFinal = (this.estilista != null && !this.estilista.isEmpty())
+                ? this.estilista
+                : "Especialista Montalvo";
+        return new CitasMontalvo(idFinal, cliente, fechaFinal, hora, servicio, precio, estilistaFinal, duracionMinutos, estadoFinal);
     }
 }

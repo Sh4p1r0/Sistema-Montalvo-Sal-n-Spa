@@ -5,6 +5,9 @@ build/
 Proyecto_Diseño_Patrones/bin/
 Proyecto_Diseño_Patrones/build/
 
+# Dependencias de pruebas descargadas por test.sh
+Proyecto_Diseño_Patrones/.test-lib/
+
 # IDEs y Entornos
 .vscode/
 .idea/

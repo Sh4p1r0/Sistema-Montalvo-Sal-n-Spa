@@ -26,8 +26,16 @@ public class SistemaFacade {
     private final UsuarioDAO usuarioDAO;
 
     public SistemaFacade() {
-        this.citaDAO = new CitaDAO();
-        this.usuarioDAO = new UsuarioDAO();
+        this(new CitaDAO(), new UsuarioDAO());
+    }
+
+    // Inyección de dependencias para pruebas (no toca la base de datos)
+    public SistemaFacade(CitaDAO citaDAO, UsuarioDAO usuarioDAO) {
+        if (citaDAO == null || usuarioDAO == null) {
+            throw new IllegalArgumentException("Los DAO no pueden ser nulos.");
+        }
+        this.citaDAO = citaDAO;
+        this.usuarioDAO = usuarioDAO;
     }
 
     // Sobrecarga anterior para compatibilidad
@@ -81,6 +89,7 @@ public class SistemaFacade {
         // Delegar la transición al patrón State
         cita.reprogramarCita(nuevaFecha, nuevaHora);
         citaDAO.actualizarReprogramacion(id, nuevaFecha, nuevaHora);
+        citaDAO.actualizarEstado(id, cita.getEstado().obtenerNombreEstado());
     }
 
     // Atender cita aplicando Patrón State
@@ -90,7 +99,7 @@ public class SistemaFacade {
             throw new IllegalArgumentException("No se encontró la cita con ID: " + id);
         }
         cita.atenderCita();
-        citaDAO.actualizarEstado(id, "Atendida");
+        citaDAO.actualizarEstado(id, cita.getEstado().obtenerNombreEstado());
     }
 
     // Finalizar cita (Archivar del calendario activo) aplicando Patrón State
@@ -100,7 +109,7 @@ public class SistemaFacade {
             throw new IllegalArgumentException("No se encontró la cita con ID: " + id);
         }
         cita.finalizarCita();
-        citaDAO.actualizarEstado(id, "Finalizada");
+        citaDAO.actualizarEstado(id, cita.getEstado().obtenerNombreEstado());
     }
 
     // Cancelar cita aplicando Patrón State
@@ -110,7 +119,7 @@ public class SistemaFacade {
             throw new IllegalArgumentException("No se encontró la cita con ID: " + id);
         }
         cita.cancelarCita();
-        citaDAO.actualizarEstado(id, "Cancelada");
+        citaDAO.actualizarEstado(id, cita.getEstado().obtenerNombreEstado());
     }
 
     // Obtener todas las citas (para Administrador e Historial)
