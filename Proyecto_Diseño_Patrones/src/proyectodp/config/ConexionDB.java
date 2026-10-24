@@ -63,7 +63,8 @@ public class ConexionDB {
             this.usuario = "postgres.cgexvsytoxdzronnmjlm";
         }
         if (this.password == null || this.password.trim().isEmpty() || "[YOUR-PASSWORD]".equals(this.password)) {
-            this.password = "H910j-@PEEEE";
+            // Sin credenciales en el código: usa db.properties o la variable de entorno
+            this.password = System.getenv().getOrDefault("MONTALVO_DB_PASSWORD", "");
         }
     }
 

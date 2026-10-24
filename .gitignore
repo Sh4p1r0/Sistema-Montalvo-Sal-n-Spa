@@ -5,6 +5,10 @@ build/
 Proyecto_Diseño_Patrones/bin/
 Proyecto_Diseño_Patrones/build/
 
+# Configuración local con credenciales (no versionar)
+db.properties
+Proyecto_Diseño_Patrones/db.properties
+
 # Dependencias de pruebas descargadas por test.sh
 Proyecto_Diseño_Patrones/.test-lib/
 

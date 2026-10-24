@@ -1,0 +1,9 @@
+# ==========================================================
+# CONFIGURACIÓN DE BASE DE DATOS POSTGRESQL
+# Copia este archivo como db.properties y completa tus datos.
+# db.properties NO se versiona: contiene credenciales.
+# ==========================================================
+
+db.url=jdbc:postgresql://<host>:5432/postgres?sslmode=require&connectTimeout=10&socketTimeout=20
+db.user=<usuario>
+db.password=<contraseña>
