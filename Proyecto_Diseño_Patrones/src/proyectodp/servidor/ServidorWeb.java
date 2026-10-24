@@ -17,6 +17,7 @@ import java.util.List;
 import proyectodp.facade.SistemaFacade;
 import proyectodp.modelo.CitasMontalvo;
 import proyectodp.modelo.Usuario;
+import proyectodp.seguridad.Permisos;
 import proyectodp.seguridad.SesionManager;
 
 public class ServidorWeb {
@@ -160,6 +161,26 @@ public class ServidorWeb {
         return false;
     }
 
+    /**
+     * Exige sesión válida + permiso del rol para la acción.
+     * Responde 401 si no hay sesión y 403 si el rol no alcanza.
+     */
+    private boolean exigirPermiso(HttpExchange exchange, Permisos.Accion accion) throws IOException {
+        if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+            return true;
+        }
+        Usuario usuario = sesiones.validar(tokenDe(exchange));
+        if (usuario == null) {
+            responderJson(exchange, 401, "{\"success\":false,\"error\":\"Sesión no válida o expirada. Inicia sesión nuevamente.\"}");
+            return false;
+        }
+        if (Permisos.puede(usuario.getRol(), accion)) {
+            return true;
+        }
+        responderJson(exchange, 403, "{\"success\":false,\"error\":\"Tu rol no tiene permiso para esta acción.\"}");
+        return false;
+    }
+
     // Handler de Login (/api/login)
     class LoginHandler implements HttpHandler {
         @Override
@@ -281,6 +302,13 @@ public class ServidorWeb {
                     }
                 }
 
+                // Un estilista solo puede ver su propia agenda
+                Usuario actual = sesiones.validar(tokenDe(exchange));
+                if (actual != null && "ESTILISTA".equalsIgnoreCase(actual.getRol())) {
+                    estilista = actual.getNombre();
+                    todas = false;
+                }
+
                 List<CitasMontalvo> lista;
                 if (todas) {
                     lista = facade.obtenerCitas();
@@ -299,6 +327,7 @@ public class ServidorWeb {
                 responderJson(exchange, 200, sb.toString());
 
             } else if ("POST".equalsIgnoreCase(metodo)) {
+                if (!exigirPermiso(exchange, Permisos.Accion.CREAR_CITA)) return;
                 try {
                     String cuerpo = leerCuerpo(exchange);
                     String cliente = extraerParametroJson(cuerpo, "cliente");
@@ -332,6 +361,7 @@ public class ServidorWeb {
             }
 
             if ("POST".equalsIgnoreCase(metodo) || "PUT".equalsIgnoreCase(metodo)) {
+                if (!exigirPermiso(exchange, Permisos.Accion.EDITAR_CITA)) return;
                 try {
                     String cuerpo = leerCuerpo(exchange);
                     String id = extraerParametroJson(cuerpo, "id");
@@ -369,6 +399,8 @@ public class ServidorWeb {
                     String id = extraerParametroJson(cuerpo, "id");
                     String accion = extraerParametroJson(cuerpo, "accion");
 
+                    if (!exigirPermiso(exchange, Permisos.Accion.EDITAR_CITA)) return;
+
                     if ("atender".equalsIgnoreCase(accion)) {
                         facade.atenderCita(id);
                     } else if ("finalizar".equalsIgnoreCase(accion)) {
@@ -404,6 +436,7 @@ public class ServidorWeb {
             }
 
             if ("POST".equalsIgnoreCase(metodo)) {
+                if (!exigirPermiso(exchange, Permisos.Accion.EDITAR_CITA)) return;
                 try {
                     String cuerpo = leerCuerpo(exchange);
                     String id = extraerParametroJson(cuerpo, "id");
@@ -459,7 +492,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
-            if (!exigirSesion(exchange)) return;
+            if (!exigirPermiso(exchange, Permisos.Accion.VER_STATS)) return;
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -474,7 +507,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
-            if (!exigirSesion(exchange)) return;
+            if (!exigirPermiso(exchange, Permisos.Accion.VER_CAJA)) return;
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;

@@ -289,8 +289,14 @@ function aplicarPerfilUsuario() {
   userAvatar.textContent = currentUser.nombre.charAt(0).toUpperCase();
   userRoleTag.textContent = currentUser.rol || 'RECEPCIONISTA';
 
-  btnToggleStats.classList.remove('hidden');
-  groupFiltroEstilista.classList.remove('hidden');
+  const esEstilista = (currentUser.rol || '').toUpperCase() === 'ESTILISTA';
+
+  btnToggleStats.classList.toggle('hidden', esEstilista);
+  groupFiltroEstilista.classList.toggle('hidden', esEstilista);
+
+  const btnNuevaCita = document.getElementById('btnNuevaCita');
+  if (btnNuevaCita) btnNuevaCita.classList.toggle('hidden', esEstilista);
+  if (cardCajaHeader) cardCajaHeader.classList.toggle('hidden', esEstilista);
 }
 
 // ==========================================================
@@ -814,6 +820,15 @@ async function actualizarContadoresHeader() {
   // Sin sesión no se consulta la caja (evita bucles de 401)
   if (!currentUser) {
     resetearContadoresHeader();
+    return;
+  }
+
+  // Un estilista no tiene acceso a la caja: se calcula solo con su agenda
+  if ((currentUser.rol || '').toUpperCase() === 'ESTILISTA') {
+    const cobradas = citas.filter(c => c.estado === 'Atendida' || c.estado === 'Finalizada');
+    const total = cobradas.reduce((acc, c) => acc + (c.precio || 0), 0);
+    if (statCajaLabel) statCajaLabel.textContent = 'Mis servicios';
+    if (statCajaValor) statCajaValor.textContent = `S/. ${total.toFixed(2)}`;
     return;
   }
 
