@@ -6,8 +6,20 @@
   <title>Montalvo Salón & Spa | Gestión de Citas y Agenda</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // Aplica el tema antes de pintar para evitar el "flash" blanco
+    (function () {
+      try {
+        var guardado = localStorage.getItem('montalvo-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', guardado || (prefersDark ? 'dark' : 'light'));
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -18,7 +30,7 @@
         <div class="brand-logo">M</div>
         <div class="brand-text">
           <h1>MONTALVO</h1>
-          <span class="brand-tagline">SALÓN & SPA • GESTIÓN DE CITAS Y RECEPCIÓN</span>
+          <span class="brand-tagline">SALÓN & SPA · CITAS Y RECEPCIÓN</span>
         </div>
       </div>
 
@@ -45,6 +57,11 @@
       </div>
 
       <div class="header-actions">
+        <button class="btn-theme-toggle" id="btnThemeToggle" type="button" aria-label="Cambiar a tema oscuro" title="Cambiar tema">
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+        </button>
+
         <!-- Control de Sesión Activa (Recepcionista) -->
         <div class="user-session-badge" id="userSessionBadge">
           <div class="user-avatar" id="userAvatar">R</div>
@@ -59,12 +76,12 @@
 
         <button class="btn btn-primary" id="btnNuevaCita">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Nueva Cita
+          <span class="btn-label">Nueva Cita</span>
         </button>
 
         <button class="btn btn-outline-dark" id="btnToggleStats" title="Ver Panel de Estadísticas">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-          Estadísticas
+          <span class="btn-label">Estadísticas</span>
         </button>
       </div>
     </div>
@@ -162,7 +179,7 @@
     <section class="filters-bar">
       <div class="search-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="inputBuscar" placeholder="Buscar por cliente, servicio o especialista...">
+        <input type="text" id="inputBuscar" placeholder="Buscar cliente o servicio...">
       </div>
 
       <div class="filter-group">
@@ -263,15 +280,13 @@
           <input type="text" id="inputCliente" class="input-field" placeholder="Ej. Luciana Ramos" required>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="selectServicio">Servicio Solicitado *</label>
-            <select id="selectServicio" class="select-styled" required></select>
-          </div>
-          <div class="form-group">
-            <label for="selectEstilista">Especialista Asignado *</label>
-            <select id="selectEstilista" class="select-styled" required></select>
-          </div>
+        <div class="form-group">
+          <label for="selectServicio">Servicio Solicitado *</label>
+          <select id="selectServicio" class="select-styled" required></select>
+        </div>
+        <div class="form-group">
+          <label for="selectEstilista">Especialista Asignado *</label>
+          <select id="selectEstilista" class="select-styled" required></select>
         </div>
 
         <div class="service-preview-box" id="servicePreviewBox">
@@ -427,14 +442,21 @@
       </div>
 
       <div class="modal-footer caja-modal-footer">
+        <button type="button" class="btn btn-soft" id="btnExportarExcel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13l8 6M16 13l-8 6"></path></svg>
+          Exportar a Excel
+        </button>
         <button type="button" class="btn btn-soft" id="btnExportarCaja">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-          Imprimir / Exportar Reporte
+          Imprimir
         </button>
         <button type="button" class="btn btn-dark" id="btnCerrarCajaFooter">Cerrar</button>
       </div>
     </div>
   </div>
+
+  <!-- Área exclusiva para impresión (oculta en pantalla) -->
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
 
   <!-- Notificaciones Toast -->
   <div class="toast-container" id="toastContainer"></div>

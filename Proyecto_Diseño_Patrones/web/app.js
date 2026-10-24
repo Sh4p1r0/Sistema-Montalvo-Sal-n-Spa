@@ -62,6 +62,7 @@ const btnCerrarCajaFooter = document.getElementById('btnCerrarCajaFooter');
 const btnExportarCaja = document.getElementById('btnExportarCaja');
 
 let periodoSeleccionado = 'hoy'; // 'ayer', 'hoy', 'semana', 'manana', 'todas', 'fecha'
+let ultimaCajaData = null; // Último arqueo cargado (para imprimir / exportar)
 
 const inputBuscar = document.getElementById('inputBuscar');
 const filtroEstado = document.getElementById('filtroEstado');
@@ -91,9 +92,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   await cargarServicios();
   await cargarEstilistas();
 
+  configurarTema();
   configurarAutenticacion();
   configurarEventos();
 });
+
+// ==========================================================
+// 0. TEMA CLARO / OSCURO (PERSISTENTE)
+// ==========================================================
+function aplicarTema(tema) {
+  const oscuro = tema === 'dark';
+  document.documentElement.setAttribute('data-theme', tema);
+  try {
+    localStorage.setItem('montalvo-theme', tema);
+  } catch (e) {
+    /* localStorage no disponible: el tema solo dura la sesión */
+  }
+
+  const btn = document.getElementById('btnThemeToggle');
+  if (btn) {
+    const texto = oscuro ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+    btn.setAttribute('aria-label', texto);
+    btn.setAttribute('title', texto);
+  }
+}
+
+function configurarTema() {
+  const actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  aplicarTema(actual);
+
+  const btn = document.getElementById('btnThemeToggle');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const esOscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    aplicarTema(esOscuro ? 'light' : 'dark');
+  });
+}
 
 // ==========================================================
 // 1. SISTEMA DE AUTENTICACIÓN Y ACCESO (PATRÓN PROXY)
@@ -207,7 +242,7 @@ function aplicarPerfilUsuario() {
 
   userName.textContent = currentUser.nombre;
   userAvatar.textContent = currentUser.nombre.charAt(0).toUpperCase();
-  userRoleTag.textContent = 'RECEPCIÓN • CONTROL TOTAL';
+  userRoleTag.textContent = 'RECEPCIONISTA';
 
   btnToggleStats.classList.remove('hidden');
   groupFiltroEstilista.classList.remove('hidden');
@@ -761,6 +796,7 @@ async function abrirModalCaja() {
     const res = await fetch(`${API_BASE}/api/caja?periodo=${periodoSeleccionado}&fecha=${fechaSeleccionada}`);
     if (!res.ok) throw new Error('No se pudo cargar los datos de caja.');
     const data = await res.json();
+    ultimaCajaData = data;
 
     document.getElementById('cajaPeriodoLabel').textContent = data.periodo || 'Período Actual';
     document.getElementById('cajaModalTotal').textContent = `S/. ${data.totalRecaudado.toFixed(2)}`;
@@ -815,6 +851,470 @@ async function abrirModalCaja() {
 function cerrarModalCaja() {
   modalCierreCaja.classList.add('hidden');
 }
+
+// ==========================================================
+// 7.1 IMPRESIÓN DEL ARQUEO DE CAJA (A4)
+// ==========================================================
+function etiquetaPeriodoActual() {
+  if (periodoSeleccionado === 'ayer') return 'Ayer';
+  if (periodoSeleccionado === 'semana') return 'Esta semana';
+  if (periodoSeleccionado === 'manana') return 'Mañana';
+  if (periodoSeleccionado === 'todas') return 'Histórico completo';
+  if (periodoSeleccionado === 'fecha' && fechaSeleccionada) return `Fecha ${fechaSeleccionada}`;
+  return 'Hoy';
+}
+
+function construirReporteImpresion(data) {
+  const citas = Array.isArray(data.citas) ? data.citas : [];
+  const total = Number(data.totalRecaudado || 0);
+  const cantidad = Number(data.cantidadServicios || citas.length || 0);
+  const promedio = cantidad > 0 ? total / cantidad : 0;
+  const periodo = data.periodo || etiquetaPeriodoActual();
+  const generado = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+
+  const filas = citas.map(c => `
+    <tr>
+      <td class="pr-center">${escapeHtml(c.hora || '')}</td>
+      <td class="pr-center">${escapeHtml(c.fecha || '')}</td>
+      <td>${escapeHtml(c.nombreCliente || '')}</td>
+      <td>${escapeHtml(c.tipoServicio || '')}</td>
+      <td>${escapeHtml(c.estilista || '')}</td>
+      <td class="pr-num">S/. ${Number(c.precio || 0).toFixed(2)}</td>
+      <td class="pr-center">${escapeHtml(c.estado || '')}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="pr-header">
+      <div class="pr-brand">
+        <div class="pr-logo">M</div>
+        <div>
+          <strong>MONTALVO</strong>
+          <span>Salón &amp; Spa · Gestión de citas</span>
+        </div>
+      </div>
+      <div class="pr-period">
+        <strong>${escapeHtml(periodo)}</strong>
+        <span>Reporte de caja</span>
+      </div>
+    </div>
+
+    <h1 class="pr-title">Cuadre de Caja &amp; Arqueo de Ingresos</h1>
+    <p class="pr-sub">Generado el ${escapeHtml(generado)} · Recepción Principal</p>
+
+    <div class="pr-kpis">
+      <div class="pr-kpi"><span>Total recaudado</span><strong>S/. ${total.toFixed(2)}</strong></div>
+      <div class="pr-kpi"><span>Servicios cobrados</span><strong>${cantidad}</strong></div>
+      <div class="pr-kpi"><span>Ticket promedio</span><strong>S/. ${promedio.toFixed(2)}</strong></div>
+    </div>
+
+    <table class="pr-table">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Servicio</th>
+          <th>Especialista</th>
+          <th class="pr-num">Monto</th>
+          <th class="pr-center">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filas || '<tr><td colspan="7" class="pr-empty">No hay servicios cobrados en este período.</td></tr>'}
+      </tbody>
+      <tfoot>
+        <tr class="pr-total-row">
+          <td colspan="5">TOTAL DEL PERÍODO</td>
+          <td class="pr-num">S/. ${total.toFixed(2)}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="pr-footer">
+      <span>Montalvo Salón &amp; Spa · Documento generado automáticamente</span>
+      <span>${escapeHtml(periodo)} · ${citas.length} registro(s)</span>
+    </div>
+  `;
+}
+
+function imprimirReporteCaja() {
+  if (!ultimaCajaData) {
+    mostrarToast('Abre primero el cuadre de caja para imprimir.', 'info');
+    return;
+  }
+
+  const area = document.getElementById('printArea');
+  area.innerHTML = construirReporteImpresion(ultimaCajaData);
+  window.print();
+}
+
+// ==========================================================
+// 7.2 EXPORTACIÓN REAL A EXCEL (.XLSX, SIN LIBRERÍAS)
+// ==========================================================
+function xmlEscape(valor) {
+  return String(valor == null ? '' : valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+const CRC32_TABLE = (() => {
+  const tabla = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    tabla[n] = c >>> 0;
+  }
+  return tabla;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/* Genera un ZIP sin compresión con la estructura mínima de un .xlsx */
+function crearZipXlsx(archivos) {
+  const encoder = new TextEncoder();
+  const ahora = new Date();
+  const dosTime = ((ahora.getHours() & 31) << 11) | ((ahora.getMinutes() & 63) << 5) | ((ahora.getSeconds() >> 1) & 31);
+  const dosDate = (((ahora.getFullYear() - 1980) & 127) << 9) | (((ahora.getMonth() + 1) & 15) << 5) | (ahora.getDate() & 31);
+
+  const partes = [];
+  const centrales = [];
+  let offset = 0;
+
+  archivos.forEach(({ nombre, contenido }) => {
+    const nombreBytes = encoder.encode(nombre);
+    const datos = typeof contenido === 'string' ? encoder.encode(contenido) : contenido;
+    const crc = crc32(datos);
+
+    const local = new Uint8Array(30 + nombreBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, datos.length, true);
+    lv.setUint32(22, datos.length, true);
+    lv.setUint16(26, nombreBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nombreBytes, 30);
+
+    partes.push(local, datos);
+    centrales.push({ nombreBytes, crc, tamano: datos.length, offset });
+    offset += local.length + datos.length;
+  });
+
+  const centralBytes = [];
+  let centralSize = 0;
+
+  centrales.forEach(({ nombreBytes, crc, tamano, offset: off }) => {
+    const c = new Uint8Array(46 + nombreBytes.length);
+    const cv = new DataView(c.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, tamano, true);
+    cv.setUint32(24, tamano, true);
+    cv.setUint16(28, nombreBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, off, true);
+    c.set(nombreBytes, 46);
+
+    centralBytes.push(c);
+    centralSize += c.length;
+  });
+
+  const fin = new Uint8Array(22);
+  const fv = new DataView(fin.buffer);
+  fv.setUint32(0, 0x06054b50, true);
+  fv.setUint16(4, 0, true);
+  fv.setUint16(6, 0, true);
+  fv.setUint16(8, centrales.length, true);
+  fv.setUint16(10, centrales.length, true);
+  fv.setUint32(12, centralSize, true);
+  fv.setUint32(16, offset, true);
+  fv.setUint16(20, 0, true);
+
+  return new Blob([...partes, ...centralBytes, fin], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+}
+
+function construirXlsxCaja(data) {
+  const citas = (Array.isArray(data.citas) ? data.citas : []).slice().sort((a, b) =>
+    String(a.fecha || '').localeCompare(String(b.fecha || '')) ||
+    String(a.hora || '').localeCompare(String(b.hora || ''))
+  );
+
+  const total = Number(data.totalRecaudado || 0);
+  const cantidad = Number(data.cantidadServicios || citas.length || 0);
+  const promedio = cantidad > 0 ? total / cantidad : 0;
+  const periodo = data.periodo || etiquetaPeriodoActual();
+  const generado = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+
+  const COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  const ref = (i, fila) => `${COLS[i]}${fila}`;
+  const cText = (r, s, v) => `<c r="${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(v)}</t></is></c>`;
+  const cNum = (r, s, v, formula) => `<c r="${r}" s="${s}">${formula ? `<f>${xmlEscape(formula)}</f>` : ''}<v>${Number.isFinite(v) ? v : 0}</v></c>`;
+  const cVacio = (r, s) => `<c r="${r}" s="${s}"/>`;
+
+  const filasXml = [];
+  const fila = (n, celdas, alto) => {
+    filasXml.push(`<row r="${n}"${alto ? ` ht="${alto}" customHeight="1"` : ''}>${celdas.join('')}</row>`);
+  };
+
+  fila(1, [cText('A1', 1, 'MONTALVO SALÓN & SPA')], 24);
+  fila(2, [cText('A2', 2, `Reporte de Caja — ${periodo}`)], 18);
+  fila(3, [cText('A3', 3, `Generado el ${generado} · Recepción Principal`)], 15);
+  fila(4, [], 6);
+
+  const encabezados = ['Hora', 'Fecha', 'Cliente', 'Servicio', 'Especialista', 'Monto (S/.)', 'Estado'];
+  fila(5, encabezados.map((h, i) => cText(ref(i, 5), 4, h)), 24);
+
+  let n = 6;
+  citas.forEach(c => {
+    fila(n, [
+      cText(ref(0, n), 6, c.hora || ''),
+      cText(ref(1, n), 6, c.fecha || ''),
+      cText(ref(2, n), 5, c.nombreCliente || ''),
+      cText(ref(3, n), 5, c.tipoServicio || ''),
+      cText(ref(4, n), 5, c.estilista || ''),
+      cNum(ref(5, n), 7, Number(c.precio || 0)),
+      cText(ref(6, n), 6, c.estado || '')
+    ]);
+    n++;
+  });
+
+  const ultimaData = n - 1;
+  const filaTotal = n;
+  const rangoMonto = ultimaData >= 6 ? `SUM(F6:F${ultimaData})` : '';
+
+  fila(filaTotal, [
+    cText(ref(0, filaTotal), 8, 'TOTAL DEL PERÍODO'),
+    cVacio(ref(1, filaTotal), 8),
+    cVacio(ref(2, filaTotal), 8),
+    cVacio(ref(3, filaTotal), 8),
+    cVacio(ref(4, filaTotal), 8),
+    cNum(ref(5, filaTotal), 9, total, rangoMonto),
+    cVacio(ref(6, filaTotal), 8)
+  ], 22);
+
+  const filaResumen = filaTotal + 2;
+  fila(filaResumen, [cText(ref(0, filaResumen), 10, 'RESUMEN DEL PERÍODO')], 20);
+
+  const resumen = [
+    ['Total recaudado', total, 12],
+    ['Servicios cobrados', cantidad, 14],
+    ['Ticket promedio', promedio, 12],
+    ['Período', periodo, 13]
+  ];
+
+  const merges = ['A1:G1', 'A2:G2', 'A3:G3', `A${filaTotal}:E${filaTotal}`];
+
+  resumen.forEach(([etiqueta, valor, estilo], idx) => {
+    const nr = filaResumen + 1 + idx;
+    const celdaValor = typeof valor === 'number'
+      ? cNum(ref(2, nr), estilo, valor)
+      : cText(ref(2, nr), estilo, valor);
+
+    fila(nr, [
+      cText(ref(0, nr), 11, etiqueta),
+      cVacio(ref(1, nr), 11),
+      celdaValor
+    ], 18);
+
+    merges.push(`A${nr}:B${nr}`);
+  });
+
+  const ultimaFila = filaResumen + resumen.length;
+  const mergeXml = merges.map(m => `<mergeCell ref="${m}"/>`).join('');
+
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<dimension ref="A1:G${ultimaFila}"/>
+<sheetViews><sheetView tabSelected="1" workbookViewId="0"><pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A6" sqref="A6"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+<cols>
+<col min="1" max="1" width="8.5" customWidth="1"/>
+<col min="2" max="2" width="12" customWidth="1"/>
+<col min="3" max="3" width="26" customWidth="1"/>
+<col min="4" max="4" width="34" customWidth="1"/>
+<col min="5" max="5" width="22" customWidth="1"/>
+<col min="6" max="6" width="14" customWidth="1"/>
+<col min="7" max="7" width="13" customWidth="1"/>
+</cols>
+<sheetData>${filasXml.join('')}</sheetData>
+<autoFilter ref="A5:G${ultimaData}"/>
+<mergeCells count="${merges.length}">${mergeXml}</mergeCells>
+<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>
+<pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/>
+</worksheet>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>
+<fonts count="6">
+<font><sz val="10.5"/><name val="Calibri"/><family val="2"/><color rgb="FF1F2937"/></font>
+<font><b/><sz val="16"/><name val="Calibri"/><family val="2"/><color rgb="FF0B0D0F"/></font>
+<font><b/><sz val="12"/><name val="Calibri"/><family val="2"/><color rgb="FF0B0D0F"/></font>
+<font><sz val="9.5"/><name val="Calibri"/><family val="2"/><color rgb="FF6B7280"/></font>
+<font><b/><sz val="10"/><name val="Calibri"/><family val="2"/><color rgb="FFFFFFFF"/></font>
+<font><b/><sz val="11"/><name val="Calibri"/><family val="2"/><color rgb="FF0B0D0F"/></font>
+</fonts>
+<fills count="4">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF191C1F"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFD1D5DB"/></left><right style="thin"><color rgb="FFD1D5DB"/></right><top style="thin"><color rgb="FFD1D5DB"/></top><bottom style="thin"><color rgb="FFD1D5DB"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="15">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="5" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="164" fontId="5" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+  const ahoraIso = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<workbookPr/>
+<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="16000" windowHeight="9000"/></bookViews>
+<sheets><sheet name="Caja" sheetId="1" r:id="rId1"/></sheets>
+<definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">Caja!$5:$5</definedName></definedNames>
+<calcPr calcId="191029" fullCalcOnLoad="1"/>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<dc:title>Reporte de Caja - Montalvo Salon &amp; Spa</dc:title>
+<dc:creator>Montalvo Salon &amp; Spa</dc:creator>
+<cp:lastModifiedBy>Montalvo Salon &amp; Spa</cp:lastModifiedBy>
+<dcterms:created xsi:type="dcterms:W3CDTF">${ahoraIso}</dcterms:created>
+<dcterms:modified xsi:type="dcterms:W3CDTF">${ahoraIso}</dcterms:modified>
+</cp:coreProperties>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+<Application>Montalvo Salon &amp; Spa</Application>
+</Properties>`;
+
+  return crearZipXlsx([
+    { nombre: '[Content_Types].xml', contenido: contentTypes },
+    { nombre: '_rels/.rels', contenido: rootRels },
+    { nombre: 'docProps/core.xml', contenido: coreXml },
+    { nombre: 'docProps/app.xml', contenido: appXml },
+    { nombre: 'xl/workbook.xml', contenido: workbookXml },
+    { nombre: 'xl/_rels/workbook.xml.rels', contenido: workbookRels },
+    { nombre: 'xl/styles.xml', contenido: stylesXml },
+    { nombre: 'xl/worksheets/sheet1.xml', contenido: sheetXml }
+  ]);
+}
+
+function nombreArchivoCaja(periodo) {
+  const limpio = String(periodo || 'reporte')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+  const hoy = new Date().toISOString().split('T')[0];
+  return `montalvo_caja_${limpio}_${hoy}.xlsx`;
+}
+
+function descargarBlob(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function exportarCajaExcel() {
+  if (!ultimaCajaData) {
+    mostrarToast('Abre primero el cuadre de caja para exportar.', 'info');
+    return;
+  }
+
+  try {
+    const periodo = ultimaCajaData.periodo || etiquetaPeriodoActual();
+    const blob = construirXlsxCaja(ultimaCajaData);
+    descargarBlob(blob, nombreArchivoCaja(periodo));
+    mostrarToast('Reporte de caja exportado a Excel.', 'success');
+  } catch (err) {
+    console.error('Error al exportar a Excel:', err);
+    mostrarToast('No se pudo generar el archivo Excel.', 'error');
+  }
+}
+
 
 function actualizarPreviewServicio() {
   const opt = selectServicio.options[selectServicio.selectedIndex];
@@ -898,9 +1398,11 @@ function configurarEventos() {
   if (btnCerrarModalCaja) btnCerrarModalCaja.addEventListener('click', cerrarModalCaja);
   if (btnCerrarCajaFooter) btnCerrarCajaFooter.addEventListener('click', cerrarModalCaja);
   if (btnExportarCaja) {
-    btnExportarCaja.addEventListener('click', () => {
-      window.print();
-    });
+    btnExportarCaja.addEventListener('click', imprimirReporteCaja);
+  }
+  const btnExportarExcel = document.getElementById('btnExportarExcel');
+  if (btnExportarExcel) {
+    btnExportarExcel.addEventListener('click', exportarCajaExcel);
   }
 
   // Modal Nueva Cita
