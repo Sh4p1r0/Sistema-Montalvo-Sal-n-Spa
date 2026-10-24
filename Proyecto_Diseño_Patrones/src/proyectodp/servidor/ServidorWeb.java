@@ -11,17 +11,21 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import proyectodp.facade.SistemaFacade;
 import proyectodp.modelo.CitasMontalvo;
 import proyectodp.modelo.Usuario;
+import proyectodp.seguridad.SesionManager;
 
 public class ServidorWeb {
 
-    private static final int PUERTO = 8080;
+    private static final int PUERTO = Integer.parseInt(
+            System.getenv().getOrDefault("MONTALVO_PORT", "8080"));
     private final SistemaFacade facade;
     private final File webDir;
+    private final SesionManager sesiones = new SesionManager();
 
     public ServidorWeb(File webDir) {
         proyectodp.config.InicializadorDB.inicializarEsquema();
@@ -51,6 +55,8 @@ public class ServidorWeb {
 
         // Rutas API REST
         server.createContext("/api/login", new LoginHandler());
+        server.createContext("/api/logout", new LogoutHandler());
+        server.createContext("/api/sesion", new SesionHandler());
         server.createContext("/api/citas", new CitasHandler());
         server.createContext("/api/citas/reprogramar", new ReprogramarHandler());
         server.createContext("/api/citas/estado", new EstadoHandler());
@@ -118,6 +124,42 @@ public class ServidorWeb {
         return "";
     }
 
+    /**
+     * Extrae el token de sesión del header Authorization: Bearer &lt;token&gt;
+     * o, como respaldo, del parámetro ?token=.
+     */
+    private static String tokenDe(HttpExchange exchange) {
+        String autorizacion = exchange.getRequestHeaders().getFirst("Authorization");
+        if (autorizacion != null && autorizacion.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return autorizacion.substring(7).trim();
+        }
+        String query = exchange.getRequestURI().getQuery();
+        if (query != null) {
+            for (String param : query.split("&")) {
+                String[] par = param.split("=", 2);
+                if (par.length == 2 && "token".equalsIgnoreCase(par[0])) {
+                    return java.net.URLDecoder.decode(par[1], StandardCharsets.UTF_8);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Exige una sesión válida. Si no la hay, responde 401 y devuelve false.
+     * Las peticiones OPTIONS (preflight CORS) siempre pasan.
+     */
+    private boolean exigirSesion(HttpExchange exchange) throws IOException {
+        if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+            return true;
+        }
+        if (sesiones.validar(tokenDe(exchange)) != null) {
+            return true;
+        }
+        responderJson(exchange, 401, "{\"success\":false,\"error\":\"Sesión no válida o expirada. Inicia sesión nuevamente.\"}");
+        return false;
+    }
+
     // Handler de Login (/api/login)
     class LoginHandler implements HttpHandler {
         @Override
@@ -138,7 +180,11 @@ public class ServidorWeb {
 
                     Usuario usuario = facade.autenticar(username, password);
                     if (usuario != null) {
-                        responderJson(exchange, 200, "{\"success\":true,\"usuario\":" + usuario.toJson() + "}");
+                        String token = sesiones.crear(usuario);
+                        responderJson(exchange, 200,
+                            "{\"success\":true,\"token\":\"" + token + "\",\"expiraEn\":"
+                            + SesionManager.DURACION_POR_DEFECTO.toSeconds()
+                            + ",\"usuario\":" + usuario.toJson() + "}");
                     } else {
                         responderJson(exchange, 401, "{\"success\":false,\"error\":\"Usuario o contraseña incorrectos.\"}");
                     }
@@ -151,11 +197,44 @@ public class ServidorWeb {
         }
     }
 
+    // Handler de Logout (/api/logout): invalida el token en el servidor
+    class LogoutHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            aplicarCors(exchange);
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            sesiones.cerrar(tokenDe(exchange));
+            responderJson(exchange, 200, "{\"success\":true}");
+        }
+    }
+
+    // Handler para restaurar la sesión (/api/sesion)
+    class SesionHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            aplicarCors(exchange);
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+            Usuario usuario = sesiones.validar(tokenDe(exchange));
+            if (usuario == null) {
+                responderJson(exchange, 401, "{\"success\":false,\"error\":\"Sesión expirada.\"}");
+            } else {
+                responderJson(exchange, 200, "{\"success\":true,\"usuario\":" + usuario.toJson() + "}");
+            }
+        }
+    }
+
     // Handler de Citas (/api/citas) con filtros por fecha y estilista
     class CitasHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             String metodo = exchange.getRequestMethod();
 
             if ("OPTIONS".equalsIgnoreCase(metodo)) {
@@ -244,6 +323,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             String metodo = exchange.getRequestMethod();
 
             if ("OPTIONS".equalsIgnoreCase(metodo)) {
@@ -275,6 +355,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             String metodo = exchange.getRequestMethod();
 
             if ("OPTIONS".equalsIgnoreCase(metodo)) {
@@ -314,6 +395,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             String metodo = exchange.getRequestMethod();
 
             if ("OPTIONS".equalsIgnoreCase(metodo)) {
@@ -356,6 +438,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             List<Usuario> estilistas = facade.obtenerEstilistas();
             StringBuilder sb = new StringBuilder("[");
             for (int i = 0; i < estilistas.size(); i++) {
@@ -376,6 +459,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -390,6 +474,7 @@ public class ServidorWeb {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             aplicarCors(exchange);
+            if (!exigirSesion(exchange)) return;
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;

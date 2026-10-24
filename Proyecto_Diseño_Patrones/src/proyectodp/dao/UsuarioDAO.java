@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import proyectodp.config.ConexionDB;
 import proyectodp.modelo.Usuario;
+import proyectodp.seguridad.PasswordHasher;
 
 public class UsuarioDAO {
 
@@ -23,26 +24,38 @@ public class UsuarioDAO {
     }
 
     public Usuario autenticar(String username, String password) {
-        if (username == null || password == null) return null;
+        if (username == null || password == null || username.isBlank()) return null;
+
+        String user = username.trim();
+        String pass = password.trim();
 
         ConexionDB pool = ConexionDB.getInstancia();
         if (pool.isConectado()) {
-            String sql = "SELECT id, username, password, rol, nombre, area_servicio FROM usuarios WHERE username = ? AND password = ?";
+            String sql = "SELECT id, username, password, rol, nombre, area_servicio FROM usuarios WHERE username = ?";
             try {
                 Connection conn = pool.getConexion();
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, username.trim());
-                    ps.setString(2, password.trim());
+                    ps.setString(1, user);
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
-                            return new Usuario(
+                            String almacenado = rs.getString("password");
+                            if (!PasswordHasher.verificar(pass, almacenado)) {
+                                return null;
+                            }
+                            Usuario u = new Usuario(
                                 rs.getInt("id"),
                                 rs.getString("username"),
-                                rs.getString("password"),
+                                almacenado,
                                 rs.getString("rol"),
                                 rs.getString("nombre"),
                                 rs.getString("area_servicio")
                             );
+                            if (PasswordHasher.necesitaMigracion(almacenado)) {
+                                String hash = PasswordHasher.hash(pass);
+                                actualizarPassword(user, hash);
+                                u.setPassword(hash);
+                            }
+                            return u;
                         }
                     }
                 }
@@ -51,13 +64,32 @@ public class UsuarioDAO {
             }
         }
 
-        // Fallback Memoria
+        // Fallback Memoria (también migra el texto plano a hash en memoria)
         for (Usuario u : USUARIOS_MEMORIA) {
-            if (u.getUsername().equalsIgnoreCase(username.trim()) && u.getPassword().equals(password.trim())) {
+            if (u.getUsername().equalsIgnoreCase(user) && PasswordHasher.verificar(pass, u.getPassword())) {
+                if (PasswordHasher.necesitaMigracion(u.getPassword())) {
+                    u.setPassword(PasswordHasher.hash(pass));
+                }
                 return u;
             }
         }
         return null;
+    }
+
+    private void actualizarPassword(String username, String hash) {
+        ConexionDB pool = ConexionDB.getInstancia();
+        if (!pool.isConectado()) return;
+        String sql = "UPDATE usuarios SET password = ? WHERE username = ?";
+        try {
+            Connection conn = pool.getConexion();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, hash);
+                ps.setString(2, username);
+                ps.executeUpdate();
+            }
+        } catch (Exception e) {
+            System.err.println("[UsuarioDAO] No se pudo migrar la contraseña a hash: " + e.getMessage());
+        }
     }
 
     public List<Usuario> listarEstilistas() {

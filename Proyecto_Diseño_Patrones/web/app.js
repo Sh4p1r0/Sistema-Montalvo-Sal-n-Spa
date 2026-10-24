@@ -13,7 +13,8 @@ const API_BASE = window.location.origin.includes('localhost') || window.location
   : 'http://localhost:8080';
 
 // Estado global de la aplicación
-let currentUser = null; // Recepcionista autenticada
+let currentUser = null; // Usuario autenticado
+let authToken = null;   // Token de sesión emitido por el servidor
 let citas = [];
 let servicios = [];
 let estilistas = [];
@@ -83,6 +84,26 @@ const previewDuracion = document.getElementById('previewDuracion');
 // Variable de auto-actualización en vivo para estadísticas
 let statsPollInterval = null;
 
+// Cliente HTTP con token de sesión: agrega Authorization y maneja el 401
+async function apiFetch(url, options = {}) {
+  const opts = { ...options, headers: { ...(options.headers || {}) } };
+  if (authToken) {
+    opts.headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  const res = await fetch(url, opts);
+
+  if (res.status === 401) {
+    limpiarSesionLocal();
+    citas = [];
+    renderizarCitas();
+    resetearContadoresHeader();
+    abrirModalLogin();
+    mostrarErrorLogin('Tu sesión expiró. Inicia sesión nuevamente.');
+    throw new Error('Sesión expirada');
+  }
+  return res;
+}
+
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', async () => {
   inputFechaFiltro.value = fechaSeleccionada;
@@ -90,7 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('reprogramNuevaFecha').value = fechaSeleccionada;
 
   await cargarServicios();
-  await cargarEstilistas();
 
   configurarTema();
   configurarAutenticacion();
@@ -134,27 +154,13 @@ function configurarTema() {
 // 1. SISTEMA DE AUTENTICACIÓN Y ACCESO (PATRÓN PROXY)
 // ==========================================================
 function configurarAutenticacion() {
-  const guardado = localStorage.getItem('montalvo_user');
-  if (guardado) {
-    try {
-      currentUser = JSON.parse(guardado);
-      aplicarPerfilUsuario();
-    } catch (e) {
-      currentUser = null;
-    }
-  }
-
-  if (!currentUser) {
-    // Sesión por defecto de Recepcionista para agilizar uso
-    establecerSesion({
-      id: 1,
-      username: 'recep',
-      rol: 'RECEPCIONISTA',
-      nombre: 'Recepción Principal',
-      areaServicio: 'Caja y Atención General'
-    });
+  // Restaurar sesión guardada validándola contra el servidor
+  const tokenGuardado = localStorage.getItem('montalvo_token');
+  if (tokenGuardado) {
+    authToken = tokenGuardado;
+    iniciarSesionGuardada();
   } else {
-    cargarCitas();
+    abrirModalLogin();
   }
 
   // Formulario de login
@@ -171,21 +177,13 @@ function configurarAutenticacion() {
         body: JSON.stringify({ username: u, password: p })
       });
       const data = await res.json();
-      if (data.success && data.usuario) {
-        establecerSesion(data.usuario);
+      if (data.success && data.usuario && data.token) {
+        await establecerSesion(data.usuario, data.token);
       } else {
         mostrarErrorLogin(data.error || 'Credenciales inválidas.');
       }
     } catch (err) {
-      // Fallback local si no hay conexión
-      console.warn('Fallback login offline:', err);
-      if (u === 'recep' && p === 'montalvo') {
-        establecerSesion({ id: 1, username: 'recep', rol: 'RECEPCIONISTA', nombre: 'Recepción Principal', areaServicio: 'Caja y Atención General' });
-      } else if (u === 'admin' && p === 'montalvo123') {
-        establecerSesion({ id: 2, username: 'admin', rol: 'RECEPCIONISTA', nombre: 'Administración Montalvo', areaServicio: 'Gerencia' });
-      } else {
-        mostrarErrorLogin('Credenciales inválidas. Usa el botón de Acceso Rápido.');
-      }
+      mostrarErrorLogin('No se pudo conectar con el servidor. Verifica que el backend esté activo.');
     }
   });
 
@@ -204,6 +202,27 @@ function configurarAutenticacion() {
   });
 }
 
+// Valida el token guardado y, si sigue vigente, restaura la sesión
+async function iniciarSesionGuardada() {
+  try {
+    const res = await fetch(`${API_BASE}/api/sesion`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    if (!res.ok) throw new Error('Sesión expirada');
+
+    const data = await res.json();
+    currentUser = data.usuario;
+    localStorage.setItem('montalvo_user', JSON.stringify(currentUser));
+    cerrarModalLogin();
+    aplicarPerfilUsuario();
+    await cargarEstilistas();
+    await cargarCitas();
+  } catch (err) {
+    limpiarSesionLocal();
+    abrirModalLogin();
+  }
+}
+
 function abrirModalLogin() {
   modalLogin.classList.remove('hidden');
   loginError.classList.add('hidden');
@@ -218,18 +237,44 @@ function mostrarErrorLogin(msg) {
   loginError.classList.remove('hidden');
 }
 
-function establecerSesion(user) {
+async function establecerSesion(user, token) {
+  authToken = token || null;
   currentUser = user;
-  localStorage.setItem('montalvo_user', JSON.stringify(user));
+  try {
+    localStorage.setItem('montalvo_user', JSON.stringify(user));
+    if (token) localStorage.setItem('montalvo_token', token);
+  } catch (e) {
+    /* localStorage no disponible */
+  }
   cerrarModalLogin();
   aplicarPerfilUsuario();
-  cargarCitas();
+  await cargarEstilistas();
+  await cargarCitas();
   mostrarToast(`¡Sesión activa: ${user.nombre}!`, 'success');
 }
 
-function cerrarSesion() {
+function limpiarSesionLocal() {
+  authToken = null;
   currentUser = null;
-  localStorage.removeItem('montalvo_user');
+  try {
+    localStorage.removeItem('montalvo_token');
+    localStorage.removeItem('montalvo_user');
+  } catch (e) {
+    /* localStorage no disponible */
+  }
+}
+
+async function cerrarSesion() {
+  const token = authToken;
+  limpiarSesionLocal();
+
+  if (token) {
+    fetch(`${API_BASE}/api/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(() => {});
+  }
+
   citas = [];
   renderizarCitas();
   actualizarContadoresHeader();
@@ -242,7 +287,7 @@ function aplicarPerfilUsuario() {
 
   userName.textContent = currentUser.nombre;
   userAvatar.textContent = currentUser.nombre.charAt(0).toUpperCase();
-  userRoleTag.textContent = 'RECEPCIONISTA';
+  userRoleTag.textContent = currentUser.rol || 'RECEPCIONISTA';
 
   btnToggleStats.classList.remove('hidden');
   groupFiltroEstilista.classList.remove('hidden');
@@ -253,7 +298,7 @@ function aplicarPerfilUsuario() {
 // ==========================================================
 async function cargarServicios() {
   try {
-    const res = await fetch(`${API_BASE}/api/servicios`);
+    const res = await apiFetch(`${API_BASE}/api/servicios`);
     servicios = await res.json();
     
     selectServicio.innerHTML = servicios.map(s => `
@@ -282,7 +327,7 @@ async function cargarServicios() {
 
 async function cargarEstilistas() {
   try {
-    const res = await fetch(`${API_BASE}/api/estilistas`);
+    const res = await apiFetch(`${API_BASE}/api/estilistas`);
     estilistas = await res.json();
   } catch (err) {
     estilistas = [
@@ -320,7 +365,7 @@ async function cargarCitas() {
       url += `fecha=${fechaSeleccionada}&`;
     }
 
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     if (!res.ok) throw new Error('Error al conectar con la base de datos de citas.');
     citas = await res.json();
 
@@ -455,7 +500,7 @@ async function finalizarCita(id) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/citas/finalizar`, {
+    const res = await apiFetch(`${API_BASE}/api/citas/finalizar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
@@ -488,7 +533,7 @@ async function finalizarCita(id) {
 
 async function cambiarEstadoCita(id, accion) {
   try {
-    const res = await fetch(`${API_BASE}/api/citas/estado`, {
+    const res = await apiFetch(`${API_BASE}/api/citas/estado`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, accion })
@@ -519,7 +564,7 @@ formNuevaCita.addEventListener('submit', async (e) => {
   const hora = document.getElementById('inputHoraCita').value;
 
   try {
-    const res = await fetch(`${API_BASE}/api/citas`, {
+    const res = await apiFetch(`${API_BASE}/api/citas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cliente, fecha, hora, tipoServicio, estilista })
@@ -574,7 +619,7 @@ formReprogramar.addEventListener('submit', async (e) => {
   const nuevaHora = document.getElementById('reprogramNuevaHora').value;
 
   try {
-    const res = await fetch(`${API_BASE}/api/citas/reprogramar`, {
+    const res = await apiFetch(`${API_BASE}/api/citas/reprogramar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, nuevaFecha, nuevaHora })
@@ -598,7 +643,7 @@ formReprogramar.addEventListener('submit', async (e) => {
 // ==========================================================
 async function cargarEstadisticasAdmin() {
   try {
-    const res = await fetch(`${API_BASE}/api/stats`);
+    const res = await apiFetch(`${API_BASE}/api/stats`);
     if (!res.ok) return;
     const stats = await res.json();
 
@@ -766,9 +811,15 @@ async function actualizarContadoresHeader() {
   statPendientes.textContent = pendientes.length;
   statAtendidas.textContent = atendidas.length;
 
+  // Sin sesión no se consulta la caja (evita bucles de 401)
+  if (!currentUser) {
+    resetearContadoresHeader();
+    return;
+  }
+
   // Actualizar Caja de Recepción en Tiempo Real
   try {
-    const res = await fetch(`${API_BASE}/api/caja?periodo=${periodoSeleccionado}&fecha=${fechaSeleccionada}`);
+    const res = await apiFetch(`${API_BASE}/api/caja?periodo=${periodoSeleccionado}&fecha=${fechaSeleccionada}`);
     if (res.ok) {
       const data = await res.json();
       if (periodoSeleccionado === 'ayer') {
@@ -791,9 +842,17 @@ async function actualizarContadoresHeader() {
   }
 }
 
+function resetearContadoresHeader() {
+  statHoy.textContent = '0';
+  statPendientes.textContent = '0';
+  statAtendidas.textContent = '0';
+  if (statCajaValor) statCajaValor.textContent = 'S/. 0.00';
+  if (statCajaLabel) statCajaLabel.textContent = 'Caja Hoy';
+}
+
 async function abrirModalCaja() {
   try {
-    const res = await fetch(`${API_BASE}/api/caja?periodo=${periodoSeleccionado}&fecha=${fechaSeleccionada}`);
+    const res = await apiFetch(`${API_BASE}/api/caja?periodo=${periodoSeleccionado}&fecha=${fechaSeleccionada}`);
     if (!res.ok) throw new Error('No se pudo cargar los datos de caja.');
     const data = await res.json();
     ultimaCajaData = data;
